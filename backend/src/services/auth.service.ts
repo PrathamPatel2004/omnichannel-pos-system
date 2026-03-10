@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import jwt from 'jsonwebtoken';
 import UserModel from "../models/user.model.js";
 import UserTokenModel from "../models/userToken.model.js";
+import type { IUser } from "../models/user.model.js";
 
 export const findUserByEmailService = async (email: string) => {
     const user = await UserModel.findOne({ email });
@@ -62,4 +64,19 @@ export const verifyUserTokenService = async (token: string) => {
     await UserTokenModel.deleteOne({ _id: userToken._id });
 
     return user;
+}
+
+export const generateTokenService = async (user: IUser) => {
+    const accessToken = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_ACCESS_TOKEN_KEY as string, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_REFRESH_TOKEN_KEY as string, { expiresIn: '30d' });
+
+    const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+
+    await UserTokenModel.create({
+        userId: user._id,
+        token: hashedRefreshToken,
+        tokenType: "RefreshToken",
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    return { accessToken, refreshToken };
 }

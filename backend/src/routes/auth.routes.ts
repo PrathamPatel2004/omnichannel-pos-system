@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { signUpController, verifyTokenController } from '../controllers/auth.controller.js';
+import authMiddleware from '../middleware/auth.middleware.js';
+import { signUpController, verifyTokenController, loginController, logoutController } from '../controllers/auth.controller.js';
 
 const authRouter = Router();
 
 authRouter.post('/signup', signUpController);
-authRouter.post('/verify-email/:token', verifyTokenController)
+authRouter.post('/verify-email/:token', verifyTokenController);
+authRouter.post('/login', loginController);
+authRouter.post('/logout', authMiddleware, logoutController);
 
 export default authRouter;

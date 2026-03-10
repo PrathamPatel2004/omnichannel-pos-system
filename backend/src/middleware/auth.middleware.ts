@@ -17,11 +17,12 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
             return res.status(401).json({ message: "Unauthorized. Token not found." });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+        const decoded = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN_KEY as string);
         req.user = decoded;
 
         next();
     } catch (error) {
+        console.log(error);
         return res.status(401).json({ message: "Unauthorized. Invalid token." });
     }
 }
