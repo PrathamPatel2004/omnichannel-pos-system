@@ -9,12 +9,14 @@ type AuthContextType = {
     user: User | null
     login: (user: User) => void
     logout: () => void
+    loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export const AuthProvider = ({children}: {children: React.ReactNode}) => {
     const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
 
     // Run once when the app loads. Checks local storage to presist login after refresh.
     useEffect(() => {
@@ -22,6 +24,7 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
         if (storedUser){
             setUser(JSON.parse(storedUser))
         }
+        setLoading(false)
     }, [])
 
     // Login function - Saves user to local storage.
@@ -38,7 +41,7 @@ export const AuthProvider = ({children}: {children: React.ReactNode}) => {
 
     // Provides auth state and functions to all child components.
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     )
