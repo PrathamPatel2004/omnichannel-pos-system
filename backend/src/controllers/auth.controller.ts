@@ -1,8 +1,14 @@
 import type { Request, Response } from "express";
 import bcryptjs from 'bcryptjs';
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { createUserService, findUserByEmailService, verifyUserTokenService, generateTokenService } from "../services/auth.service.js";
+import UserModel from "../models/user.model.js";
 import UserTokenModel from "../models/userToken.model.js";
+
+interface JwtPayload {
+    id: string;
+}
 
 export const signUpController = async (req: Request, res: Response) => {
     try {
@@ -80,9 +86,78 @@ export const loginController = async (req: Request, res: Response) => {
     }
 }
 
-// Implement access token verification controller
+export const verifyAccessTokenController = async (req: Request, res: Response) => {
+    try {
+        const authHeader = req.headers.authorization;
 
-// Implement refresh token controller
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ message: "Access token missing" });
+        }
+
+        const token = authHeader.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Invalid token format" });
+        }
+
+        const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+        if (!ACCESS_TOKEN_SECRET) {
+            throw new Error("ACCESS_TOKEN_SECRET is not defined");
+        }
+
+        const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+
+        return res.status(200).json({ success: true, message: "Access token valid", user: decoded });
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid or expired access token" });
+    }
+};
+
+export const refreshTokenController = async (req: Request, res: Response) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return res.status(401).json({ message: "Refresh token missing" });
+        }
+
+        const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+            if (!REFRESH_TOKEN_SECRET) {
+            throw new Error("REFRESH_TOKEN_SECRET is not defined");
+        }
+
+        const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as JwtPayload;
+
+        const hashedToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+        const storedToken = await UserTokenModel.findOne({ token: hashedToken, tokenType: "RefreshToken" });
+
+        if (!storedToken) { 
+            return res.status(401).json({ message: "Invalid or reused refresh token" });
+        }
+
+        await storedToken.deleteOne();
+        const user = await UserModel.findById(decoded.id);
+
+        if (!user) { 
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = await generateTokenService(user);
+
+        const newHashedToken = crypto.createHash("sha256").update(newRefreshToken).digest("hex");
+        await UserTokenModel.create({ userId: user._id, token: newHashedToken, tokenType: "RefreshToken" });
+
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            path: "/",
+            maxAge: 1000 * 60 * 60 * 24 * 30,
+        });
+
+        return res.status(200).json({ success: true, accessToken });
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid or expired refresh token" });
+    }
+};
 
 export const logoutController = async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken

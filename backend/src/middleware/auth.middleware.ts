@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
+import type { JwtUserPayload } from "../types/express.js";
 
 export const getTokenFromHeader = (req: Request): string | null => {
     const authHeader = req.headers.authorization;
@@ -17,7 +18,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
             return res.status(401).json({ message: "Unauthorized. Token not found." });
         }
 
-        const decoded = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN_KEY as string);
+        const decoded = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN_KEY as string) as JwtUserPayload;
         req.user = decoded;
 
         next();

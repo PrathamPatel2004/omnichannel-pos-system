@@ -67,7 +67,7 @@ export const verifyUserTokenService = async (token: string) => {
 }
 
 export const generateTokenService = async (user: IUser) => {
-    const accessToken = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_ACCESS_TOKEN_KEY as string, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.SECRET_ACCESS_TOKEN_KEY as string, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_REFRESH_TOKEN_KEY as string, { expiresIn: '30d' });
 
     const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");

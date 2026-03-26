@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from "cookie-parser";
 
 import authRouter from './routes/auth.routes.js';
+import storeRouter from './routes/store.routes.js';
 
 const app = express();
 
@@ -20,5 +21,6 @@ app.get('/', (req: Request, res: Response) => {
 })
 
 app.use('/api/auth', authRouter);
+app.use('/api/store', storeRouter);
 
 export default app;
