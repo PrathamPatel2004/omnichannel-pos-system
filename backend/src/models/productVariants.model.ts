@@ -13,7 +13,7 @@ const productVariantsSchema = new Schema<IProductVariants>({
     productId: { type: Schema.Types.ObjectId, ref: 'Products', required: true },
     sku: { type: String, required: true, unique: true, index: true },
     price: { type: Number, required: true },
-    barcode: { type: String, required: true, unique: true, sparse: true },
+    barcode: { type: String, required: true, unique: true },
     createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Schema, type Document } from 'mongoose';
 
 export interface IInventory extends Document {
-    productId: mongoose.Types.ObjectId;
+    productVariantId: mongoose.Types.ObjectId;
     storeId: mongoose.Types.ObjectId;
     stock: number;
     reservedStock: number;
@@ -11,7 +11,7 @@ export interface IInventory extends Document {
 }
 
 const inventorySchema = new Schema<IInventory>({
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Products', required: true },
+    productVariantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariants', required: true },
     storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stores', required: true },
     stock: { type: Number, required: true, default: 0 },
     reservedStock: { type: Number, required: true, default: 0 },
@@ -19,5 +19,6 @@ const inventorySchema = new Schema<IInventory>({
     updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
+inventorySchema.index({ productVariantId: 1, storeId: 1 }, { unique: true });
 const InventoryModel = mongoose.model<IInventory>('Inventory', inventorySchema);
 export default InventoryModel;
