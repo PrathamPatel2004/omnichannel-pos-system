@@ -3,9 +3,9 @@ import type { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 
-import authRouter from './routes/auth.routes.js';
-import storeRouter from './routes/store.routes.js';
-import productRouter from './routes/product.routes.js';
+import authRouter from './routes/auth.routes';
+import storeRouter from './routes/store.routes';
+import productRouter from './routes/product.routes';
 
 const app = express();
 

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import StoresModel from "../models/stores.model.js";
+import StoresModel from "../models/stores.model";
 
 export const createStoreController = async (req: Request, res: Response) => {
     try {

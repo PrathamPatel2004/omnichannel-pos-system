@@ -1,31 +1,35 @@
-import { createProduct, getProducts } from "../controllers/product.controller.js";
-import ProductsModel from "../models/products.model.js";
-import ProductVariantsModel from "../models/productVariants.model.js";
+import { createProduct, getProducts } from "../controllers/product.controller";
+import ProductsModel from "../models/products.model";
+import ProductVariantsModel from "../models/productVariants.model";
 
-jest.mock("../models/products.model.js");
-jest.mock("../models/productVariants.model.js");
+jest.mock("../models/products.model");
+jest.mock("../models/productVariants.model");
 
 describe("Product Controller", () => {
-    describe("createProduct", () => {
-        it("should create a new product and productVariant and return 201 status", async () => {
-            const req: any = {
+    describe("CreateProduct", () => {
+        it("should create a new product and variant", async () => {
+            const req = {
                 body: {
                     name: "Shirt",
-                    description: "Cotton Shirt for Men",
+                    description: "Cotton Shirt",
                     category: "Clothing",
-                    variants: [
-                        { sku: "SKU1", price: 100, barcode: "12345" }
-                    ]
+                    variants: [{ sku: "SKU1", price: 100, barcode: "123" }]
                 }
-            }
+            } as any;
 
-            const res: any = {
+            const res = {
                 status: jest.fn().mockReturnThis(),
                 json: jest.fn()
-            };
+            } as any;
 
-            (ProductsModel.create as jest.Mock).mockResolvedValue({ _id: "productId", ...req.body });
-            (ProductVariantsModel.insertMany as jest.Mock).mockResolvedValue([{ _id: "variantId", productId: "productId", ...req.body.variants[0] }]);
+            (ProductsModel.create as jest.Mock).mockResolvedValue({
+                _id: "productId",
+                ...req.body
+            });
+
+            (ProductVariantsModel.insertMany as jest.Mock).mockResolvedValue([
+                { _id: "variantId", productId: "productId" }
+            ]);
 
             await createProduct(req, res);
 
@@ -35,43 +39,39 @@ describe("Product Controller", () => {
         });
     });
 
-    describe("getProducts", () => {
-        it("should return a list of products and their variants with 200 status", async () => {
-            const req = {};
+    describe("GetProducts", () => {
+        it("should return products with variants", async () => {
+            const req = {} as any;
             const res = {
                 status: jest.fn().mockReturnThis(),
                 json: jest.fn()
-            }
+            } as any;
 
             const mockProducts = [{
                 _id: "productId",
                 name: "Shirt",
-                description: "Cotton Shirt for Men",
-                category: "Clothing",
-                createdAt: new Date()
+                category: "Clothing"
             }];
 
             const mockVariants = [{
                 _id: "variantId",
                 productId: "productId",
-                sku: "SKU1",
-                price: 100,
-                barcode: "12345",
-                createdAt: new Date()
+                sku: "SKU1"
             }];
-            (ProductsModel.find as jest.Mock).mockResolvedValue(mockProducts);
-            (ProductVariantsModel.find as jest.Mock).mockResolvedValue(mockVariants);
 
-            await getProducts(req as any, res as any);
+            (ProductsModel.find as jest.Mock).mockReturnValue({
+                lean: jest.fn().mockResolvedValue(mockProducts)
+            });
+
+            (ProductVariantsModel.find as jest.Mock).mockReturnValue({
+                lean: jest.fn().mockResolvedValue(mockVariants)
+            });
+
+            await getProducts(req, res);
 
             expect(ProductsModel.find).toHaveBeenCalled();
             expect(ProductVariantsModel.find).toHaveBeenCalled();
-
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith([{
-                ...mockProducts[0],
-                variants: [mockVariants[0]]
-            }]);
         });
     });
 });

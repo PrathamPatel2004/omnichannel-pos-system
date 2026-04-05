@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
-import type { JwtUserPayload } from "../types/express.js";
+import type { JwtUserPayload } from "../types/express";
 
 export const getTokenFromHeader = (req: Request): string | null => {
     const authHeader = req.headers.authorization;

@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import InventoryModel from "../models/inventory.model.js";
-import InventoryLedgerModel from "../models/inventoryLedger.model.js";
-import redis from "../config/redisConfig.js";
+import InventoryModel from "../models/inventory.model";
+import InventoryLedgerModel from "../models/inventoryLedger.model";
+import redis from "../config/redisConfig";
 
 export const createInventory = async (req: Request, res: Response) => {
     try {

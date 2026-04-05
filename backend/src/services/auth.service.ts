@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from 'jsonwebtoken';
-import UserModel from "../models/user.model.js";
-import UserTokenModel from "../models/userToken.model.js";
-import type { IUser } from "../models/user.model.js";
+import UserModel from "../models/user.model";
+import UserTokenModel from "../models/userToken.model";
+import type { IUser } from "../models/user.model";
 
 export const findUserByEmailService = async (email: string) => {
     const user = await UserModel.findOne({ email });
