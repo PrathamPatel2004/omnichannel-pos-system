@@ -1,8 +1,9 @@
 import { createContext, useState, useEffect, useContext } from 'react'
 
 type User = {
+    fname: string
     email: string
-    role: string
+    role: "admin" | "manager" | "cashier"
 }
 
 type AuthContextType = {
