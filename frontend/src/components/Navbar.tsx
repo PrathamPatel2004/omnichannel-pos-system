@@ -1,44 +1,51 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
-export default function Navbar() {
-    const navigate = useNavigate()
-    const { user, logout } = useAuth()
+export default function Navbar({ active }: { active: string }) {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
 
-    const handleLogout = () => {
-        logout()
-        navigate("/")
-    }
+  if (!user) return null; // no navbar if not logged in
 
-    return (
-        <div className="flex justify-between items-center p-4 bg-orange-500 text-white">
-            <h1 className="font-bold">POS System</h1>
-            <div className="space-x-4">
-                {!user ? (
-                    <>
-                        <Link to="/">Login</Link>
-                    </>
-                ) : (
-                    <>
-                        <Link to="/dashboard">Dashboard</Link>
+  const getRoleLabel = () => {
+    if (user.role === "admin") return "Admin";
+    if (user.role === "manager") return "Manager";
+    if (user.role === "cashier") return "Cashier";
+    return "";
+  };
 
-                        {user.role === "admin" && (
-                        <Link to="/admin">Admin Panel</Link>
-                        )}
+  return (
+    <div className="h-16 bg-white shadow flex items-center justify-between px-6 relative">
+      
+      {/* LEFT: Active Page */}
+      <h1 className="text-lg font-semibold">{active}</h1>
 
-                        {user.role === "manager" && (
-                        <Link to="/admin">Manager Panel</Link>
-                        )}
+      {/* RIGHT: User Info */}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-gray-600">
+          {getRoleLabel()}: {user.fname}
+        </span>
 
-                        {user.role === "cashier" && (
-                        <Link to="/pos">POS</Link>
-                        )}
-
-                        <button onClick={handleLogout}>Logout</button>
-                    </>
-                )
-                }
-            </div>
+        {/* Avatar */}
+        <div
+          onClick={() => setOpen(!open)}
+          className="w-8 h-8 bg-black text-white flex items-center justify-center rounded-full cursor-pointer"
+        >
+          {user.fname?.charAt(0).toUpperCase()}
         </div>
-    )
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute right-6 top-16 w-40 bg-white border rounded shadow-md">
+            <button
+              onClick={logout}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
