@@ -2,9 +2,9 @@ import type { Request, Response } from "express";
 import bcryptjs from 'bcryptjs';
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { createUserService, findUserByEmailService, verifyUserTokenService, generateTokenService } from "../services/auth.service.js";
-import UserModel from "../models/user.model.js";
-import UserTokenModel from "../models/userToken.model.js";
+import { createUserService, findUserByEmailService, verifyUserTokenService, generateTokenService } from "../services/auth.service";
+import UserModel from "../models/user.model";
+import UserTokenModel from "../models/userToken.model";
 
 interface JwtPayload {
     id: string;
@@ -99,7 +99,7 @@ export const verifyAccessTokenController = async (req: Request, res: Response) =
             return res.status(401).json({ message: "Invalid token format" });
         }
 
-        const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+        const ACCESS_TOKEN_SECRET = process.env.SECRET_ACCESS_TOKEN_KEY;
         if (!ACCESS_TOKEN_SECRET) {
             throw new Error("ACCESS_TOKEN_SECRET is not defined");
         }
@@ -119,7 +119,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
             return res.status(401).json({ message: "Refresh token missing" });
         }
 
-        const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+        const REFRESH_TOKEN_SECRET = process.env.SECRET_REFRESH_TOKEN_KEY;
             if (!REFRESH_TOKEN_SECRET) {
             throw new Error("REFRESH_TOKEN_SECRET is not defined");
         }

@@ -1,4 +1,4 @@
-import { IUser } from "../models/user.model.ts";
+import { IUser } from "../models/user.model";
 import "express";
 
 interface JwtUserPayload {

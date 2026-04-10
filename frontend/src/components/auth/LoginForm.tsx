@@ -28,7 +28,7 @@ export default function LoginForm() {
             localStorage.setItem("accessToken", res.accessToken)
             // store user
             login(res.user)
-            navigate("/app")
+            navigate("/dashboard")
         }
         catch (error: any){
             alert(error.response?.data?.message || "Login Failed")
@@ -37,8 +37,6 @@ export default function LoginForm() {
             setIsSubmitting(false)
         }
     }
-
-
 
     return (
         <div className="bg-amber-100 p-8 rounded-lg shadow-md max-w-md w-full place-content-center">

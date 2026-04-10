@@ -1,7 +1,9 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import InventoryModel from "../models/inventory.model.js";
-import InventoryLedgerModel from "../models/inventoryLedger.model.js";
+import InventoryModel from "../models/inventory.model";
+import InventoryLedgerModel from "../models/inventoryLedger.model";
+import redis from "../config/redis";
+import { sendBarcodeEvent } from "../services/kafka/barcode.producer";
 
 export const createInventory = async (req: Request, res: Response) => {
     try {
@@ -30,6 +32,16 @@ export const getInventory = async (req: Request, res: Response) => {
         console.error(err);
         return res.status(500).json({ message: "Internal Server Error" });
     }
+}
+
+export const getInventoryCache = async (key: string) => {
+    const cached = await redis.get(key);
+
+    if (cached) {
+        return JSON.parse(cached);
+    }
+
+    return null;
 }
 
 export const getInventoryByProductVariant = async (req: Request, res: Response) => {
@@ -89,6 +101,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
     }
 }
 
+// endpoint to reserve stock when order is placed - this will be called by order service when order is created/placed
 export const inventoryReservedStock = async (req: Request, res: Response) => {
     try {
         const variantId = req.params.variantId as string;
@@ -115,13 +128,117 @@ export const inventoryReservedStock = async (req: Request, res: Response) => {
     }
 }
 
-// inventory Reserved Stock Release endpoint
+// endpoint to release reserved stock when order is cancelled or expires
+export const inventoryReleaseReservedStock = async (req: Request, res: Response) => {
+    try {
+        const variantId = req.params.variantId as string;
+        const storeId = req.params.storeId as string;
+        const { quantity } = req.body;
 
-// inventory final sale endpoint - reduces reserved stock and creates inventory ledger entry
+        const inventory = await InventoryModel.findOne({ productVariantId: variantId, storeId });
+
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventory not found" });
+        }
+
+        inventory.stock += quantity;
+        inventory.reservedStock -= quantity;
+
+        await inventory.save();
+        return res.status(200).json({ message: "Reserved stock released successfully", inventory });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+// endpoint to deduct reserved stock when order is confirmed/fulfilled
+export const inventoryDeductReservedStock = async (req: Request, res: Response) => {
+    try {
+        const variantId = req.params.variantId as string;
+        const storeId = req.params.storeId as string;
+        const orderId = req.params.orderId as string;
+        const { quantity } = req.body;
+        const userId = req.user?.id as string;
+
+        const inventory = await InventoryModel.findOne({ productVariantId: variantId, storeId });
+
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventory not found" });
+        }
+
+        const oldQty = inventory.stock;
+        if (inventory.stock < quantity) {
+            return res.status(400).json({ message: "Insufficient stock" });
+        }
+        inventory.stock -= quantity;
+        await inventory.save();
+
+        await InventoryLedgerModel.create({
+            storeId,
+            productVariantId: variantId,
+            changeType: "sale",
+            quantityChange: -quantity,
+            oldQuantity: oldQty,
+            newQuantity: inventory.stock,
+            referenceId: orderId,
+            referenceType: "Order",
+            issuedBy: userId
+        });
+
+        res.json({ message: "Stock deducted" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
 
 // low stock notification alert endpoint
+export const lowStockAlert = async (req: Request, res: Response) => {
+    try {
+        const storeId = req.params.storeId as string;
 
-// get inventory ledger history endpoint
+        const items = await InventoryModel.find({
+            storeId,
+            $expr: { $lte: ["$stock", "$reorderLevel"] }
+        }).populate({ path: "productVariantId", populate: { path: "productId" } });
+        
+        res.json({ message: "Low stock items retrieved", items });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+//get inventory ledger for a store
+export const getInventoryLedger = async (req: Request, res: Response) => {
+    try {
+        const storeId = req.params.storeId as string;
+
+        const logs = await InventoryLedgerModel.find({ storeId }).populate("productVariantId").sort({ timestamp: -1 });
+
+        res.json({ message: "Inventory ledger retrieved", logs });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
 
 // barcode scanning endpoint - use of kafka service for integration with barcode scanning devices/system
+export const barcodeScan = async (req: Request, res: Response) => {
+    try {
+        const { barcode } = req.body;
 
+        if (!barcode) {
+            return res.status(400).json({
+                message: "barcode required"
+            });
+        }
+
+        await sendBarcodeEvent({ barcode });
+        res.json({ message: "Barcode event sent" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
